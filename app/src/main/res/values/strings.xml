@@ -1,6 +1,9 @@
 <resources>
-    <string name="app_name">rmonkey</string>
-    <string name="title_home">Home</string>
-    <string name="title_dashboard">Dashboard</string>
-    <string name="title_notifications">Notifications</string>
+    <string name="app_name">虹猴助手</string>
+    <string name="title_home">功能</string>
+    <string name="title_dashboard">设置</string>
+    <string name="title_notifications">关于</string>
+    <string name="logo">Logo</string>
+    <string name="host">服务器地址</string>
+    <string name="host_hint">请填写服务器地址</string>
 </resources>
