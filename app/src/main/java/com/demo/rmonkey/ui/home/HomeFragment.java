@@ -47,18 +47,18 @@ public class HomeFragment extends Fragment {
 
             SharedPreferences.Editor editor = sp.edit();
 
-            if(accountText != null) {
+            if (accountText != null) {
                 editor.putStringSet("account", null);
             }
 
             editor.putBoolean("geting-account", true);
-            editor.commit();
+            editor.apply();
 
             openActivity(v);
 
             NotificationUtils notificationUtils = new NotificationUtils(v.getContext());
             Notification notification = notificationUtils.getNotification("正在获取用户信息", "请稍等...", R.mipmap.ic_launcher);
-            notificationUtils.getManager().notify(1,notification);
+            notificationUtils.getManager().notify(1, notification);
         }
     }
 
@@ -88,7 +88,7 @@ public class HomeFragment extends Fragment {
 
             NotificationUtils notificationUtils = new NotificationUtils(view.getContext());
             Notification notification = notificationUtils.getNotification("打开应用失败", "请安装对应APP", R.mipmap.ic_launcher);
-            notificationUtils.getManager().notify(1,notification);
+            notificationUtils.getManager().notify(1, notification);
         }
     }
 
@@ -100,8 +100,8 @@ public class HomeFragment extends Fragment {
     }
 
 
-    private void setView(View root){
-        final EditText account =  root.findViewById(R.id.editText2);
+    private void setView(View root) {
+        final EditText account = root.findViewById(R.id.editText2);
         final Button getAccountButton = root.findViewById(R.id.get_account);
 
         account.setFocusable(false);
@@ -110,7 +110,7 @@ public class HomeFragment extends Fragment {
         SharedPreferences sp = this.getActivity().getSharedPreferences(SPNAME, Context.MODE_PRIVATE);
         String accountText = sp.getString("account", null);
 
-        if(accountText == null) {
+        if (accountText == null) {
             account.setText("未记录账号");
             getAccountButton.setText("点击获取");
         } else {

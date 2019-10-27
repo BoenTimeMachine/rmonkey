@@ -16,7 +16,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import java.util.List;
 
-public  class BaseAccessibilityService extends AccessibilityService {
+public class BaseAccessibilityService extends AccessibilityService {
 
     private AccessibilityManager mAccessibilityManager;
     private Context mContext;
@@ -92,29 +92,29 @@ public  class BaseAccessibilityService extends AccessibilityService {
             return null;
         }
 
-        if(nodeInfo.getText() != null) {
-            return  nodeInfo.getText().toString();
+        if (nodeInfo.getText() != null) {
+            return nodeInfo.getText().toString();
         }
 
-        if(nodeInfo.getChildCount() == 0) {
+        if (nodeInfo.getChildCount() == 0) {
             return null;
         }
 
         for (int i = 0; i < nodeInfo.getChildCount(); i++) {
             AccessibilityNodeInfo child = nodeInfo.getChild(i);
 
-            if(child == null) {
+            if (child == null) {
                 continue;
             }
 
             String ccText = getNodeInfoText(child);
 
-            if(ccText != null) {
+            if (ccText != null) {
                 return ccText;
             }
         }
 
-       return  null;
+        return null;
     }
 
     public boolean findNodeInfoInChild(AccessibilityNodeInfo nodeInfo, String id) {
@@ -122,31 +122,31 @@ public  class BaseAccessibilityService extends AccessibilityService {
             return false;
         }
 
-        if(nodeInfo.getChildCount() == 0) {
-            return  false;
+        if (nodeInfo.getChildCount() == 0) {
+            return false;
         }
 
         AccessibilityNodeInfo nodeInfo1 = findViewByID(id, nodeInfo);
 
-        if(nodeInfo1 != null) {
+        if (nodeInfo1 != null) {
             return true;
         }
 
         for (int i = 0; i < nodeInfo.getChildCount(); i++) {
             AccessibilityNodeInfo child = nodeInfo.getChild(i);
 
-            if(child == null) {
+            if (child == null) {
                 continue;
             }
 
-            boolean finded= findNodeInfoInChild(child, id);
+            boolean finded = findNodeInfoInChild(child, id);
 
-            if(finded) {
-                return  true;
+            if (finded) {
+                return true;
             }
         }
 
-        return  false;
+        return false;
     }
 
 
@@ -286,7 +286,7 @@ public  class BaseAccessibilityService extends AccessibilityService {
         List<AccessibilityNodeInfo> nodeInfoList = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId(id);
 
         if (nodeInfoList != null && !nodeInfoList.isEmpty()) {
-            return  nodeInfoList;
+            return nodeInfoList;
         }
 
         return null;
@@ -344,7 +344,6 @@ public  class BaseAccessibilityService extends AccessibilityService {
             nodeInfo.performAction(AccessibilityNodeInfo.ACTION_PASTE);
         }
     }
-
 
 
     @Override

@@ -1,12 +1,7 @@
 package com.demo.rmonkey;
 
 import android.app.Notification;
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
-import android.widget.Button;
-import android.widget.EditText;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
@@ -14,12 +9,9 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
-import com.demo.rmonkey.util.AppStateTracker;
 import com.demo.rmonkey.util.OpenAccessibilitySettingHelper;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.ycbjie.notificationlib.NotificationUtils;
-
-import static com.demo.rmonkey.util.Const.SPNAME;
 
 public class MainActivity extends AppCompatActivity {
     @Override
@@ -50,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
 //                .setContentIntent(resultPendingIntent)
                 .setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI)
                 .setPriority(Notification.PRIORITY_DEFAULT)
-                .sendNotification(1,"应用已启动", "请在设置页底部开启服务", R.mipmap.ic_launcher);
+                .sendNotification(1, "应用已启动", "请在设置页底部开启服务", R.mipmap.ic_launcher);
 
 //        AppStateTracker.track(getApplication(), new AppStateTracker.AppStateChangeListener() {
 //            @Override

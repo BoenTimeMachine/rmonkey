@@ -46,7 +46,7 @@ public class DashboardFragment extends Fragment {
         autoOpenSwitch.setOnCheckedChangeListener(new AutoOpenOnCheckedListener());
 
         final Switch closeSwitch = root.findViewById(R.id.close);
-        boolean close= sp.getBoolean("close", false);
+        boolean close = sp.getBoolean("close", false);
         closeSwitch.setChecked(close);
         closeSwitch.setOnCheckedChangeListener(new CloseOnCheckedListener());
 
@@ -60,7 +60,7 @@ public class DashboardFragment extends Fragment {
             SharedPreferences sp = buttonView.getContext().getSharedPreferences(SPNAME, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sp.edit();
             editor.putBoolean("autoOpen", isChecked);
-            editor.commit();
+            editor.apply();
 
             ToastUtils.show(buttonView.getContext(), "设置成功");
         }
@@ -73,7 +73,7 @@ public class DashboardFragment extends Fragment {
             SharedPreferences sp = buttonView.getContext().getSharedPreferences(SPNAME, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sp.edit();
             editor.putBoolean("close", isChecked);
-            editor.commit();
+            editor.apply();
 
             ToastUtils.show(buttonView.getContext(), "设置成功");
         }
@@ -86,7 +86,7 @@ public class DashboardFragment extends Fragment {
             SharedPreferences sp = v.getContext().getSharedPreferences(SPNAME, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sp.edit();
             editor.putString("host", host.getText().toString());
-            editor.commit();
+            editor.apply();
 
             ToastUtils.show(v.getContext(), "服务器地址更新成功");
         }
@@ -99,7 +99,7 @@ public class DashboardFragment extends Fragment {
             SharedPreferences sp = v.getContext().getSharedPreferences(SPNAME, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sp.edit();
             editor.putString("pass", pass.getText().toString());
-            editor.commit();
+            editor.apply();
 
             ToastUtils.show(v.getContext(), "密码更新成功");
         }
