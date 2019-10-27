@@ -34,6 +34,10 @@ public  class BaseAccessibilityService extends AccessibilityService {
         return mInstance;
     }
 
+//    private boolean invalidEnable() {
+//        return SettingConfig.getInstance().getReEnable();
+//    }
+
     /**
      * Check当前辅助服务是否启用
      *
@@ -79,6 +83,74 @@ public  class BaseAccessibilityService extends AccessibilityService {
     }
 
     /**
+     * 获取节点文本
+     *
+     * @param nodeInfo nodeInfo
+     */
+    public String getNodeInfoText(AccessibilityNodeInfo nodeInfo) {
+        if (nodeInfo == null) {
+            return null;
+        }
+
+        if(nodeInfo.getText() != null) {
+            return  nodeInfo.getText().toString();
+        }
+
+        if(nodeInfo.getChildCount() == 0) {
+            return null;
+        }
+
+        for (int i = 0; i < nodeInfo.getChildCount(); i++) {
+            AccessibilityNodeInfo child = nodeInfo.getChild(i);
+
+            if(child == null) {
+                continue;
+            }
+
+            String ccText = getNodeInfoText(child);
+
+            if(ccText != null) {
+                return ccText;
+            }
+        }
+
+       return  null;
+    }
+
+    public boolean findNodeInfoInChild(AccessibilityNodeInfo nodeInfo, String id) {
+        if (nodeInfo == null) {
+            return false;
+        }
+
+        if(nodeInfo.getChildCount() == 0) {
+            return  false;
+        }
+
+        AccessibilityNodeInfo nodeInfo1 = findViewByID(id, nodeInfo);
+
+        if(nodeInfo1 != null) {
+            return true;
+        }
+
+        for (int i = 0; i < nodeInfo.getChildCount(); i++) {
+            AccessibilityNodeInfo child = nodeInfo.getChild(i);
+
+            if(child == null) {
+                continue;
+            }
+
+            boolean finded= findNodeInfoInChild(child, id);
+
+            if(finded) {
+                return  true;
+            }
+        }
+
+        return  false;
+    }
+
+
+    /**
      * 模拟返回操作
      */
     public void performBackClick() {
@@ -112,6 +184,26 @@ public  class BaseAccessibilityService extends AccessibilityService {
             e.printStackTrace();
         }
         performGlobalAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+    }
+
+    public void performScrollForward(AccessibilityNodeInfo nodeInfo) {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        nodeInfo.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+    }
+
+    public void performGoBack() {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        performGlobalAction(GLOBAL_ACTION_BACK);
     }
 
     /**
@@ -156,6 +248,21 @@ public  class BaseAccessibilityService extends AccessibilityService {
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public AccessibilityNodeInfo findViewByID(String id) {
         AccessibilityNodeInfo accessibilityNodeInfo = getRootInActiveWindow();
+        if (accessibilityNodeInfo == null) {
+            return null;
+        }
+        List<AccessibilityNodeInfo> nodeInfoList = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId(id);
+        if (nodeInfoList != null && !nodeInfoList.isEmpty()) {
+            for (AccessibilityNodeInfo nodeInfo : nodeInfoList) {
+                if (nodeInfo != null) {
+                    return nodeInfo;
+                }
+            }
+        }
+        return null;
+    }
+
+    public AccessibilityNodeInfo findViewByID(String id, AccessibilityNodeInfo accessibilityNodeInfo) {
         if (accessibilityNodeInfo == null) {
             return null;
         }

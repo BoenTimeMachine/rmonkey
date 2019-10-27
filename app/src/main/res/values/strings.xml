@@ -6,4 +6,13 @@
     <string name="logo">Logo</string>
     <string name="host">服务器地址</string>
     <string name="host_hint">请填写服务器地址</string>
+    <string name="auto_get_account">自动获取</string>
+    <string name="set_host">设置地址</string>
+    <string name="pass">密码</string>
+    <string name="pass_hint">请填入密码</string>
+    <string name="set_pass">设置密码</string>
+    <string name="account_hint">账号信息</string>
+    <string name="account">未记录账号</string>
+    <string name="auto_open">是否领取红包</string>
+    <string name="close">暂时关闭助手</string>
 </resources>
