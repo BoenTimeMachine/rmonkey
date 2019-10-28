@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.MediaType;
@@ -13,9 +14,13 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 
 public class OkHttpUtil {
-    private static OkHttpClient client = new OkHttpClient();
+    private final static String host = "http://192.168.101.103:9709/api";
+    private static OkHttpClient client = new OkHttpClient.Builder().retryOnConnectionFailure(false)
+                .connectTimeout(3, TimeUnit.SECONDS)
+                .readTimeout(3, TimeUnit.SECONDS)
+                .writeTimeout(3, TimeUnit.SECONDS).build();
 
-    public static void postData(String host, String time, List<String> data) {
+    public static void postData(String token, String host, String time, List<String> data) {
 
         JsonObject jsonContainer = new JsonObject();
         jsonContainer.addProperty("time", time);
@@ -27,7 +32,8 @@ public class OkHttpUtil {
         MediaType JSON = MediaType.parse("application/json; charset=utf-8");
         RequestBody requestBody = RequestBody.create(JSON, jsonContainer.toString());
         Request request = new Request.Builder()
-                .url("http://" + host + "/api/rc")
+                .url(host + "/rc")
+                .header("Authorization", token)
                 .post(requestBody)
                 .build();
 
@@ -36,11 +42,11 @@ public class OkHttpUtil {
         try {
             call.execute();
         } catch (IOException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
         }
     }
 
-    public static void postGroup(String host, String group) {
+    public static void postGroup(String token, String host, String group) {
 
         JsonObject jsonContainer = new JsonObject();
         jsonContainer.addProperty("group", group);
@@ -48,7 +54,8 @@ public class OkHttpUtil {
         MediaType JSON = MediaType.parse("application/json; charset=utf-8");
         RequestBody requestBody = RequestBody.create(JSON, jsonContainer.toString());
         Request request = new Request.Builder()
-                .url("http://" + host + "/api/g")
+                .url(host + "/g")
+                .header("Authorization", token)
                 .post(requestBody)
                 .build();
 
@@ -57,7 +64,29 @@ public class OkHttpUtil {
         try {
             call.execute();
         } catch (IOException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
+        }
+    }
+
+    public static void postPass(String token, String host, String pass) {
+
+        JsonObject jsonContainer = new JsonObject();
+        jsonContainer.addProperty("pass", pass);
+
+        MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+        RequestBody requestBody = RequestBody.create(JSON, jsonContainer.toString());
+        Request request = new Request.Builder()
+                .url(host + "/p")
+                .header("Authorization", token)
+                .post(requestBody)
+                .build();
+
+        Call call = client.newCall(request);
+
+        try {
+            call.execute();
+        } catch (IOException e) {
+//            e.printStackTrace();
         }
     }
 }

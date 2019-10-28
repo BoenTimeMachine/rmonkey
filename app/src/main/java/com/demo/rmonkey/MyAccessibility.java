@@ -1,13 +1,14 @@
 package com.demo.rmonkey;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.content.SharedPreferences;
+import android.os.Handler;
 import android.util.Log;
-import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
-import com.demo.rmonkey.util.Debouncer;
-import com.demo.rmonkey.util.OkHttpUtil;
+import com.demo.rmonkey.runnable.DataRunnable;
+import com.demo.rmonkey.runnable.GroupRunnable;
 import com.ycbjie.notificationlib.NotificationUtils;
 
 import java.text.ParseException;
@@ -21,7 +22,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static android.view.accessibility.AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
 import static com.demo.rmonkey.util.Const.PKGNAME;
 import static com.demo.rmonkey.util.Const.SPNAME;
 
@@ -31,194 +31,182 @@ public class MyAccessibility extends BaseAccessibilityService {
 
     private static final String PKG = PKGNAME + ":id/";
 
-    private boolean checking = false;
+    private int state = 0;
 
-    private Debouncer messageDebouncer = new Debouncer(new Debouncer.Callback<Integer>() {
+    private Handler mainHandler = new Handler();
+
+    private Runnable mainRunnable = new Runnable() {
+        @SuppressLint("Assert")
         @Override
-        public void call(Integer type) {
-            Log.d(TAG, "检查开始 ------" + type);
-
-            if (checking) {
-                return;
-            }
-            ;
-
-            checking = true;
-
+        public void run() {
             try {
-                check(type == TYPE_WINDOW_STATE_CHANGED);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                Log.d(TAG, ex.toString());
+                assert getSettingBoolean("close") && getRootInWindow() != null;
+
+                // 检查账号
+                checkAccount();
+
+                // 检查页面
+                checkPage();
+
+            } catch (Exception e) {
+                Log.d(TAG, "error: " + e.getMessage());
             } finally {
-                checking = false;
-                Log.d(TAG, "检查结束 ------");
+                mainHandler.postDelayed(this, 500);
             }
         }
-    }, 500);
+    };
 
-    @Override
-    public void onAccessibilityEvent(AccessibilityEvent event) {
+    @SuppressLint("Assert")
+    private void checkPage() throws Exception {
+        try {
 
-        if (getClosed()) {
-            return;
-        }
+            AccessibilityNodeInfo myToolbar = findViewByID(getId("myToolbar"));
 
-        Log.d(TAG, event.toString());
+            if (findViewByID(getId("rl_redpacket_main")) != null) {
+                // 红包弹窗
+                doReadPacketModal();
+            } else if (findNodeInfoInChild(myToolbar, getId("number"))) {
+                // 群聊
+                doGroup();
+            } else if (myToolbar.getChild(1).getText() != null && myToolbar.getChild(1).getText().equals("红包详情")) {
+                // 红包详情
+                doReadPacket();
+            } else if (myToolbar.getChild(0).getText() != null) {
+                // 首页
+                doHome();
 
-//        // TYPE_WINDOW_STATE_CHANGED
-//        // TYPE_WINDOW_CONTENT_CHANGED
-        messageDebouncer.call(event.getEventType());
-
-    }
-
-    private void check(boolean windowStageChanged) throws Exception {
-        SharedPreferences preferences = getSharedPreferences(SPNAME, MODE_PRIVATE);
-
-        if (preferences.getBoolean("geting-account", false)) {
-            // 检查账号
-            checkAccount();
-        } else {
-            // 检查所在位置
-            checkPosition(windowStageChanged);
-        }
-    }
-
-    private void checkPosition(boolean windowStageChanged) throws Exception {
-        if (findViewByID(PKG + "iv_tab_icon") != null) {
-            saveGroup(null);
-            notify("已离开群聊", "监听已暂停");
-        } else if (findViewByID(PKG + "action_help") != null) {
-            String group = getGroup();
-
-            if (group != null) {
-
-                if (group.contains(findViewByID(PKG + "title").getText())) {
-                    if (windowStageChanged) {
-                        notify("已进入群聊", "正在监听红包");
-                    }
-
-                    checkMessageList();
-
-                    return;
-                } else {
-                    notify("群聊已更换", "正在重新获取信息");
-                }
-            }
-            ;
-
-            Thread.sleep(500);
-
-            performViewClick(findViewByID(PKG + "action_help"));
-        } else if (findViewByID(PKG + "txt_team_id") != null) {
-            Thread.sleep(500);
-
-            String group = getGroupFromView();
-            notify("已获取群信息", "正在监听红包");
-
-            saveGroup(group);
-
-            performGoBack();
-        } else if (findViewByID(PKG + "rl_redpacket_main") != null) {
-            openReadPacket();
-        } else if (findViewByID(PKG + "tv_already_get") != null) {
-            checkAlreadyGetInfo();
-        }
-        ;
-    }
-
-    private void checkMessageList() throws Exception {
-        AccessibilityNodeInfo list = findViewByID(PKG + "messageListView");
-
-        if (list == null) {
-            return;
-        }
-
-        List<AccessibilityNodeInfo> messages = list.findAccessibilityNodeInfosByViewId(PKG + "message_item_content");
-
-        if (messages == null || messages.isEmpty()) {
-            return;
-        }
-
-        for (AccessibilityNodeInfo message : messages) {
-            if (!findNodeInfoInChild(message, PKG + "rel_background")) {
-                Log.d(TAG, "checkMessageList: 不是红包");
-
+            } else if (myToolbar.getChild(1).getText() != null && myToolbar.getChild(1).getText().toString().startsWith("聊天成员")) {
+                // 群聊设置
+                doGroupInfo();
             } else {
-                Log.d(TAG, "checkMessageList: 是红包");
+                assert false;
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception("未找到页面");
         }
 
+    }
 
-//        int lastHashCode = 0;
-//
-//        while (true){
-//            List<AccessibilityNodeInfo> messages = list.findAccessibilityNodeInfosByViewId(PKG + "message_item_content");
-//
-//
-//            if(messages == null || messages.isEmpty()) {
-//                return;
-//            }
-//
-//            Log.d(TAG, "checkMessageList: " + messages.size());
-//
-//            AccessibilityNodeInfo lastMessage = messages.get(messages.size() - 1);
-//
-//            String lastMessageText = getNodeInfoText(lastMessage);
-//
-//            if(lastMessageText == null || lastMessage.hashCode() == lastHashCode) {
-//                Log.d(TAG, "到底了");
-//                return;
-//            }
-//
-//            Log.d(TAG, lastMessageText);
-//            Log.d(TAG, Integer.toString(lastMessage.hashCode()));
-//
-//            lastHashCode = lastMessage.hashCode();
-//
-//            performScrollForward(list);
-//        }
+    private void doHome() {
+        Log.d(TAG, "doHome: ");
+        state = 0;
+
+        if(getGroup() != null) {
+            postGroup(null);
+            notify("已离开群聊", "监听已暂停");
+        }
+    }
+
+    private void doGroup() throws Exception {
+        Log.d(TAG, "doGroup: ");
+
+        String group = getGroup();
+        boolean show = state == 0;
+
+        AccessibilityNodeInfo myToolbar = findViewByID(getId("myToolbar"));
+
+        if (group == null) {
+            notify("已进入群聊", "正在获取信息", show);
+            goGroupInfo();
+        } else if (!group.endsWith(myToolbar.getChild(2).getChild(0).getText().toString())) {
+            postGroup(null);
+            notify("已更换群聊", "正在重新获取信息", show);
+            goGroupInfo();
+        } else {
+            notify("已进入群聊", "正在监听中-" + group, show);
+            listenGroup();
+        }
+
+    }
+
+    private void listenGroup() throws Exception {
+        state = 1;
+
+        AccessibilityNodeInfo list = findViewByID(getId("messageListView"));
+
+        assert list != null;
+
+        list.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+
+        List<AccessibilityNodeInfo> abs = findViewsByID(getId("rel_background"));
+
+        assert abs != null;
+
+        AccessibilityNodeInfo last = abs.get(abs.size() - 1);
+
+        performViewClick(last);
+    }
+
+    private void goGroupInfo() throws Exception {
+        Thread.sleep(500);
+        performViewClick(findViewByID(getId("action_help")));
+    }
+
+    private void doGroupInfo() throws Exception {
+        Log.d(TAG, "doGroupInfo: ");
+        String group = findViewByID(getId("txt_team_id")).getText().toString() + "|" + getNodeInfoText(findViewByID(getId("layoutName")).getChild(1));
+        postGroup(group);
+        performGoBack();
+        notify("已获取群信息", "正在监听中-" + group);
+    }
+
+    private void doReadPacket() throws Exception {
+        Log.d(TAG, "doReadPacket: ");
+        checkAlreadyGetInfo();
+    }
+
+    private void doReadPacketModal() {
+        Log.d(TAG, "doReadPacketModal: ");
+        openReadPacket();
     }
 
     private void checkAccount() throws Exception {
-        SharedPreferences preferences = getSharedPreferences(SPNAME, MODE_PRIVATE);
-
-        AccessibilityNodeInfo tabs = findViewByID(PKG + "ctab_layout");
-        int times = 6;
-
-        while (times > 0 && tabs == null) {
-            times--;
-            Thread.sleep(500);
-            tabs = findViewByID(PKG + "ctab_layout");
-        }
-
-        AccessibilityNodeInfo me = findViewByText("我");
-
-        if (me == null) {
-            notify("应用操作失败", "请重启城信客户端");
+        if (getSettingString("account") != null) {
             return;
         }
 
+        AccessibilityNodeInfo tabs = findViewByID(getId("ctab_layout"));
+
+        if (tabs == null) {
+            Thread.sleep(300);
+            performGoBack();
+            throw new Exception("未在首页");
+        }
+
+        AccessibilityNodeInfo me;
+
+        try {
+            me = tabs.getChild(0).getChild(3);
+            assert me != null && "我".equals(getNodeInfoText(me));
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception("未找到我按钮");
+        }
+
+        Thread.sleep(300);
         performViewClick(me);
 
-        AccessibilityNodeInfo accountNode = findViewByID(PKG + "head_detail_label");
+        AccessibilityNodeInfo accountNode = findViewByID(getId("head_detail_label"));
 
-        if (accountNode == null) {
-            notify("未检测到城信号", "请先设置城信号");
-            return;
+        try {
+            assert accountNode != null && accountNode.getText() != null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception("未检测到城信号");
         }
 
-        SharedPreferences.Editor editor = preferences.edit();
-
-        editor.putString("account", accountNode.getText().toString());
-        editor.putBoolean("geting-account", false);
-        editor.apply();
-
-        notify("账号已记录", "进入群聊即可自动记录");
+        setSettingString("account", accountNode.getText().toString());
+        notify("账号已获取", "选择群聊进入即可开始记录");
     }
 
-    private void checkAlreadyGetInfo() throws Exception {
-        AccessibilityNodeInfo alreadyGet = findViewByID(PKG + "tv_already_get");
+    private boolean checkAlreadyGetInfo() throws Exception {
+
+        AccessibilityNodeInfo alreadyGet = findViewByID(getId("tv_already_get"));
+
+        if (alreadyGet == null) {
+            return false;
+        }
 
         String alreadyGetInfo = alreadyGet.getText().toString();
         Pattern pattern = Pattern.compile("\u5df2\u9886\u53d6([0-9]+)/(\\1)\u4e2a");
@@ -229,7 +217,7 @@ public class MyAccessibility extends BaseAccessibilityService {
         if (!isMatch) {
 //            Log.d(TAG , "未领取完，已忽略");
             performGoBack();
-            return;
+            return false;
         }
 
         // 红包个数
@@ -241,19 +229,18 @@ public class MyAccessibility extends BaseAccessibilityService {
         String id = getRedPacketID(size, time);
 
         if (isChecked(id)) {
-//            Log.d(TAG , "被记录过，已忽略");
             performGoBack();
-            return;
+            return true;
         }
-
-//        Log.d(TAG, "\u7b2c\u4e00\u4e2a\u9886\u53d6\u65f6\u95f4" + time);
 
         List<String> minfos = new ArrayList<>();
 
-        List<AccessibilityNodeInfo> moneys = findViewsByID(PKG + "tv_red_money");
+        List<AccessibilityNodeInfo> moneys = findViewsByID(getId("tv_red_money"));
+
+        Log.d(TAG, "checkAlreadyGetInfo: moneys" + moneys.toString());
 
         if (moneys == null) {
-            return;
+            return false;
         }
 
         for (AccessibilityNodeInfo money : moneys) {
@@ -263,7 +250,7 @@ public class MyAccessibility extends BaseAccessibilityService {
 
             AccessibilityNodeInfo parent = money.getParent();
 
-            if (!"android.widget.RelativeLayout".equals(parent.getClassName().toString())) {
+            if (!"android.widget.LinearLayout".equals(parent.getClassName().toString())) {
                 continue;
             }
 
@@ -271,10 +258,10 @@ public class MyAccessibility extends BaseAccessibilityService {
         }
 
         if (size > moneys.size()) {
-            performScrollForward(findViewByID(PKG + "rv_redpacket"));
+            performScrollForward(findViewByID(getId("rv_redpacket")));
         }
 
-        moneys = findViewsByID(PKG + "tv_red_money");
+        moneys = findViewsByID(getId("tv_red_money"));
 
         int rest = size - minfos.size();
 
@@ -287,7 +274,7 @@ public class MyAccessibility extends BaseAccessibilityService {
 
                 AccessibilityNodeInfo parent = money.getParent();
 
-                if (!"android.widget.RelativeLayout".equals(parent.getClassName().toString())) {
+                if (!"android.widget.LinearLayout".equals(parent.getClassName().toString())) {
                     continue;
                 }
 
@@ -297,8 +284,8 @@ public class MyAccessibility extends BaseAccessibilityService {
 
         saveRedPacketId(id);
         postData(time, minfos);
-//        Log.d(TAG , "记录成功");
         performGoBack();
+        return true;
     }
 
     private String getRedPacketTime() throws ParseException {
@@ -326,20 +313,6 @@ public class MyAccessibility extends BaseAccessibilityService {
         return sdf.format(minDate);
     }
 
-    @Override
-    protected void onServiceConnected() {
-        SharedPreferences preferences = getSharedPreferences(SPNAME, MODE_PRIVATE);
-
-        String account = preferences.getString("account", null);
-
-        if (account != null) {
-            notify("辅助服务已启动", "进入群聊即可开始记录");
-        } else {
-            notify("辅助服务已启动", "请进入虹猴APP中获取用户信息");
-        }
-
-    }
-
     public boolean isChecked(String id) {
         SharedPreferences preferences = getSharedPreferences(SPNAME, MODE_PRIVATE);
 
@@ -348,8 +321,6 @@ public class MyAccessibility extends BaseAccessibilityService {
         assert reds != null;
         return reds.contains(id);
     }
-
-    ;
 
     public void saveRedPacketId(String id) {
         SharedPreferences preferences = getSharedPreferences(SPNAME, MODE_PRIVATE);
@@ -364,91 +335,100 @@ public class MyAccessibility extends BaseAccessibilityService {
         editor.apply();
     }
 
-    ;
-
     public void openReadPacket() {
-        SharedPreferences preferences = getSharedPreferences(SPNAME, MODE_PRIVATE);
-
-        if (preferences.getBoolean("autoOpen", false) && findViewByID(PKG + "iv_open_redpacket") != null) {
+        if (getSettingBoolean("autoOpen", false) && findViewByID(PKG + "iv_open_redpacket") != null) {
             performViewClick(findViewByID(PKG + "iv_open_redpacket"));
         } else if (findViewByID(PKG + "tv_other_redpacket") != null) {
             performViewClick(findViewByID(PKG + "tv_other_redpacket"));
-        } else {
-            performGoBack();
+        } else if (findViewByID(PKG + "rel_parent") != null) {
+            findViewByID(PKG + "rel_parent").performAction(AccessibilityNodeInfo.ACTION_CLICK);
         }
     }
-
-    public String getGroupFromView() {
-        return findViewByID(PKG + "txt_team_id").getText().toString() + "|" + getNodeInfoText(findViewByID(PKG + "layoutName").getChild(1));
-    }
-
-    ;
 
     public String getGroup() {
         SharedPreferences preferences = getSharedPreferences(SPNAME, MODE_PRIVATE);
         return preferences.getString("group", null);
     }
 
-    ;
-
-    public void saveGroup(String group) {
-        SharedPreferences preferences = getSharedPreferences(SPNAME, MODE_PRIVATE);
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.putString("group", group);
-        editor.apply();
-
-        postGroup(group);
-    }
-
-    ;
-
-    public boolean getCheckingGroup() {
-        SharedPreferences preferences = getSharedPreferences(SPNAME, MODE_PRIVATE);
-        return preferences.getBoolean("checking-group", false);
-    }
-
-    ;
-
-    public void setCheckingGroup(boolean checking) {
-        SharedPreferences preferences = getSharedPreferences(SPNAME, MODE_PRIVATE);
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.putBoolean("checking-group", checking);
-        editor.apply();
-    }
-
-    ;
-
     public String getRedPacketID(int size, String time) {
         String content = findViewByID(PKG + "tv_red_blessings").getText().toString();
         return time + "|" + size + "|" + content;
     }
 
+    // 数据发送
     public void postData(String time, List<String> data) {
-        SharedPreferences preferences = getSharedPreferences(SPNAME, MODE_PRIVATE);
-        OkHttpUtil.postData(preferences.getString("host", "192.168.101.103:9709"), time, data);
+        new Thread(new DataRunnable(getToken(),getSettingString("host", "192.168.101.103:9709"), time, data)).start();
     }
 
     public void postGroup(String group) {
-        SharedPreferences preferences = getSharedPreferences(SPNAME, MODE_PRIVATE);
-        OkHttpUtil.postGroup(preferences.getString("host", "192.168.101.103:9709"), group);
+        setSettingString("group", group);
+        new Thread(new GroupRunnable(getToken(), getSettingString("host", "192.168.101.103:9709"), group)).start();
     }
 
-    public boolean getClosed() {
-        SharedPreferences preferences = getSharedPreferences(SPNAME, MODE_PRIVATE);
-        return preferences.getBoolean("close", false);
+
+    // 辅助函数
+    private String getId(String id) {
+        return PKG + id;
     }
 
-    ;
+    private String getToken() {
+        String account = getSettingString("account", "").substring(4);
+        return account + "::::" + getSettingString("pass", "");
+    }
 
-    public void notify(String title) {
+    // 发通知
+    private void notify(String title) {
         NotificationUtils notificationUtils = new NotificationUtils(this.getApplicationContext());
         Notification notification = notificationUtils.getNotification(title, null, R.mipmap.ic_launcher);
         notificationUtils.getManager().notify(1, notification);
     }
 
-    public void notify(String title, String content) {
+    private void notify(String title, String content) {
         NotificationUtils notificationUtils = new NotificationUtils(this.getApplicationContext());
         Notification notification = notificationUtils.getNotification(title, content, R.mipmap.ic_launcher);
         notificationUtils.getManager().notify(1, notification);
+    }
+
+    private void notify(String title, String content, boolean show) {
+        if (!show) {
+            return;
+        }
+
+        NotificationUtils notificationUtils = new NotificationUtils(this.getApplicationContext());
+        Notification notification = notificationUtils.getNotification(title, content, R.mipmap.ic_launcher);
+        notificationUtils.getManager().notify(1, notification);
+    }
+
+    // 本地存储
+    private void setSettingString(String key, String value) {
+        getSharedPreferences(SPNAME, MODE_PRIVATE).edit().putString(key, value).apply();
+    }
+
+    private String getSettingString(String key, String defValue) {
+        return getSharedPreferences(SPNAME, MODE_PRIVATE).getString(key, defValue);
+    }
+
+    private String getSettingString(String key) {
+        return getSharedPreferences(SPNAME, MODE_PRIVATE).getString(key, null);
+    }
+
+    private void setSettingBoolean(String key, Boolean value) {
+        getSharedPreferences(SPNAME, MODE_PRIVATE).edit().putBoolean(key, value).apply();
+    }
+
+    private boolean getSettingBoolean(String key, boolean defValue) {
+        return getSharedPreferences(SPNAME, MODE_PRIVATE).getBoolean(key, defValue);
+    }
+
+    private boolean getSettingBoolean(String key) {
+        return getSharedPreferences(SPNAME, MODE_PRIVATE).getBoolean(key, false);
+    }
+
+    @Override
+    protected void onServiceConnected() {
+        notify("辅助服务已启动", getSettingString("account", null) != null ? "进入群聊即可开始记录" : "即将自动获取账号信息，请勿操作");
+
+        // 启动轮询
+        mainHandler.postDelayed(mainRunnable, 600);
     }
 }

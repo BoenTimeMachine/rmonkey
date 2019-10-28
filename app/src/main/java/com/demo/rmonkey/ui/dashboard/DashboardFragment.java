@@ -1,6 +1,5 @@
 package com.demo.rmonkey.ui.dashboard;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -15,8 +14,10 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
 import com.demo.rmonkey.R;
+import com.demo.rmonkey.runnable.GroupRunnable;
 import com.demo.rmonkey.util.ToastUtils;
 
+import static android.content.Context.MODE_PRIVATE;
 import static com.demo.rmonkey.util.Const.SPNAME;
 
 public class DashboardFragment extends Fragment {
@@ -25,17 +26,17 @@ public class DashboardFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_dashboard, container, false);
 
-        SharedPreferences sp = this.getContext().getSharedPreferences(SPNAME, Context.MODE_PRIVATE);
+        SharedPreferences sp = this.getContext().getSharedPreferences(SPNAME, MODE_PRIVATE);
 
-        final EditText host = root.findViewById(R.id.host);
+//        final EditText host = root.findViewById(R.id.host);
 
-        host.setText(sp.getString("host", ""));
+//        host.setText(sp.getString("host", ""));
 
-        final Button setHostButton = root.findViewById(R.id.set_host);
-        setHostButton.setOnClickListener(new SetHostOnclickListener());
+//        final Button setHostButton = root.findViewById(R.id.set_host);
+//        setHostButton.setOnClickListener(new SetHostOnclickListener());
 
         final EditText pass = root.findViewById(R.id.pass);
-        pass.setText(sp.getString("pass", ""));
+        pass.setText(sp.getString("pass", "123456"));
 
         final Button setPassButton = root.findViewById(R.id.set_pass);
         setPassButton.setOnClickListener(new SetPassOnclickListener());
@@ -57,7 +58,7 @@ public class DashboardFragment extends Fragment {
 
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            SharedPreferences sp = buttonView.getContext().getSharedPreferences(SPNAME, Context.MODE_PRIVATE);
+            SharedPreferences sp = buttonView.getContext().getSharedPreferences(SPNAME, MODE_PRIVATE);
             SharedPreferences.Editor editor = sp.edit();
             editor.putBoolean("autoOpen", isChecked);
             editor.apply();
@@ -70,7 +71,7 @@ public class DashboardFragment extends Fragment {
 
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            SharedPreferences sp = buttonView.getContext().getSharedPreferences(SPNAME, Context.MODE_PRIVATE);
+            SharedPreferences sp = buttonView.getContext().getSharedPreferences(SPNAME, MODE_PRIVATE);
             SharedPreferences.Editor editor = sp.edit();
             editor.putBoolean("close", isChecked);
             editor.apply();
@@ -79,29 +80,43 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    class SetHostOnclickListener implements View.OnClickListener {
-        @Override
-        public void onClick(View v) {
-            final EditText host = v.getRootView().findViewById(R.id.host);
-            SharedPreferences sp = v.getContext().getSharedPreferences(SPNAME, Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = sp.edit();
-            editor.putString("host", host.getText().toString());
-            editor.apply();
-
-            ToastUtils.show(v.getContext(), "服务器地址更新成功");
-        }
-    }
+//    class SetHostOnclickListener implements View.OnClickListener {
+//        @Override
+//        public void onClick(View v) {
+//            final EditText host = v.getRootView().findViewById(R.id.host);
+//            SharedPreferences sp = v.getContext().getSharedPreferences(SPNAME, MODE_PRIVATE);
+//            SharedPreferences.Editor editor = sp.edit();
+//            editor.putString("host", host.getText().toString());
+//            editor.apply();
+//
+//            ToastUtils.show(v.getContext(), "服务器地址更新成功");
+//        }
+//    }
 
     class SetPassOnclickListener implements View.OnClickListener {
         @Override
         public void onClick(View v) {
             final EditText pass = v.getRootView().findViewById(R.id.pass);
-            SharedPreferences sp = v.getContext().getSharedPreferences(SPNAME, Context.MODE_PRIVATE);
+            SharedPreferences sp = v.getContext().getSharedPreferences(SPNAME, MODE_PRIVATE);
             SharedPreferences.Editor editor = sp.edit();
+
+            String newPass =  pass.getText().toString();
+
+            new Thread(new GroupRunnable(getToken(), getSettingString("host", "192.168.101.103:9709"), newPass)).start();
+
             editor.putString("pass", pass.getText().toString());
             editor.apply();
 
             ToastUtils.show(v.getContext(), "密码更新成功");
         }
+    }
+
+    private String getSettingString(String key, String defValue) {
+        return this.getContext().getSharedPreferences(SPNAME, MODE_PRIVATE).getString(key, defValue);
+    }
+
+    private String getToken() {
+        String account = getSettingString("account", "").substring(4);
+        return account + "::::" + getSettingString("pass", "");
     }
 }

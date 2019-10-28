@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
 //                .setContentIntent(resultPendingIntent)
                 .setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI)
                 .setPriority(Notification.PRIORITY_DEFAULT)
-                .sendNotification(1, "应用已启动", "请在设置页底部开启服务", R.mipmap.ic_launcher);
+                .sendNotification(1, "应用已启动", "请在系统设置页中开启虹猴服务", R.mipmap.ic_launcher);
 
 //        AppStateTracker.track(getApplication(), new AppStateTracker.AppStateChangeListener() {
 //            @Override

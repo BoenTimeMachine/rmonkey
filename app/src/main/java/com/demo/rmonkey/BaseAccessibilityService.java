@@ -10,11 +10,15 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityWindowInfo;
 
 import java.util.List;
+
+import static com.demo.rmonkey.util.Const.PKGNAME;
 
 public class BaseAccessibilityService extends AccessibilityService {
 
@@ -34,9 +38,24 @@ public class BaseAccessibilityService extends AccessibilityService {
         return mInstance;
     }
 
-//    private boolean invalidEnable() {
-//        return SettingConfig.getInstance().getReEnable();
-//    }
+    public AccessibilityNodeInfo getRootInWindow() {
+        try {
+            List<AccessibilityWindowInfo> windows = getWindows();
+
+            for (AccessibilityWindowInfo window:windows){
+                AccessibilityNodeInfo root = window.getRoot();
+
+                if(root.getPackageName().equals(PKGNAME)) {
+                    return root;
+                }
+
+            }
+
+            return null;
+        } catch (Exception e) {
+            return getRootInActiveWindow();
+        }
+    }
 
     /**
      * Check当前辅助服务是否启用
@@ -149,6 +168,38 @@ public class BaseAccessibilityService extends AccessibilityService {
         return false;
     }
 
+    public AccessibilityNodeInfo findNodeInfoInChild(String id, AccessibilityNodeInfo nodeInfo) {
+        if (nodeInfo == null) {
+            return null;
+        }
+
+        if (nodeInfo.getChildCount() == 0) {
+            return null;
+        }
+
+        AccessibilityNodeInfo nodeInfo1 = findViewByID(id, nodeInfo);
+
+        if (nodeInfo1 != null) {
+            return nodeInfo1;
+        }
+
+        for (int i = 0; i < nodeInfo.getChildCount(); i++) {
+            AccessibilityNodeInfo child = nodeInfo.getChild(i);
+
+            if (child == null) {
+                continue;
+            }
+
+            AccessibilityNodeInfo finded = findNodeInfoInChild(id, child);
+
+            if (finded != null) {
+                return finded;
+            }
+        }
+
+        return null;
+    }
+
 
     /**
      * 模拟返回操作
@@ -175,6 +226,18 @@ public class BaseAccessibilityService extends AccessibilityService {
     }
 
     /**
+     * 模拟下滑操作
+     */
+    public void performScrollBackward(AccessibilityNodeInfo nodeInfo) {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        nodeInfo.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD);
+    }
+
+    /**
      * 模拟上滑操作
      */
     public void performScrollForward() {
@@ -188,7 +251,7 @@ public class BaseAccessibilityService extends AccessibilityService {
 
     public void performScrollForward(AccessibilityNodeInfo nodeInfo) {
         try {
-            Thread.sleep(500);
+            Thread.sleep(300);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -198,7 +261,7 @@ public class BaseAccessibilityService extends AccessibilityService {
 
     public void performGoBack() {
         try {
-            Thread.sleep(500);
+            Thread.sleep(400);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -224,7 +287,7 @@ public class BaseAccessibilityService extends AccessibilityService {
      * @return View
      */
     public AccessibilityNodeInfo findViewByText(String text, boolean clickable) {
-        AccessibilityNodeInfo accessibilityNodeInfo = getRootInActiveWindow();
+        AccessibilityNodeInfo accessibilityNodeInfo = getRootInWindow();
         if (accessibilityNodeInfo == null) {
             return null;
         }
@@ -247,7 +310,7 @@ public class BaseAccessibilityService extends AccessibilityService {
      */
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public AccessibilityNodeInfo findViewByID(String id) {
-        AccessibilityNodeInfo accessibilityNodeInfo = getRootInActiveWindow();
+        AccessibilityNodeInfo accessibilityNodeInfo = getRootInWindow();
         if (accessibilityNodeInfo == null) {
             return null;
         }
@@ -278,7 +341,7 @@ public class BaseAccessibilityService extends AccessibilityService {
     }
 
     public List<AccessibilityNodeInfo> findViewsByID(String id) {
-        AccessibilityNodeInfo accessibilityNodeInfo = getRootInActiveWindow();
+        AccessibilityNodeInfo accessibilityNodeInfo = getRootInWindow();
 
         if (accessibilityNodeInfo == null) {
             return null;
@@ -293,7 +356,7 @@ public class BaseAccessibilityService extends AccessibilityService {
     }
 
     public void clickTextViewByText(String text) {
-        AccessibilityNodeInfo accessibilityNodeInfo = getRootInActiveWindow();
+        AccessibilityNodeInfo accessibilityNodeInfo = getRootInWindow();
         if (accessibilityNodeInfo == null) {
             return;
         }
@@ -310,7 +373,7 @@ public class BaseAccessibilityService extends AccessibilityService {
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public void clickTextViewByID(String id) {
-        AccessibilityNodeInfo accessibilityNodeInfo = getRootInActiveWindow();
+        AccessibilityNodeInfo accessibilityNodeInfo = getRootInWindow();
         if (accessibilityNodeInfo == null) {
             return;
         }
@@ -342,6 +405,18 @@ public class BaseAccessibilityService extends AccessibilityService {
             clipboard.setPrimaryClip(clip);
             nodeInfo.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
             nodeInfo.performAction(AccessibilityNodeInfo.ACTION_PASTE);
+        }
+    }
+
+    public void printNode(AccessibilityNodeInfo node, int index) {
+        if (node == null) {
+            return;
+        }
+
+        Log.d("printNode:" + index, node.getViewIdResourceName() + node.getText());
+
+        for (int i = 0; i < node.getChildCount(); i++) {
+            printNode(node.getChild(i),index + 1);
         }
     }
 
