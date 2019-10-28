@@ -14,7 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
 import com.demo.rmonkey.R;
-import com.demo.rmonkey.runnable.GroupRunnable;
+import com.demo.rmonkey.runnable.PassRunnable;
 import com.demo.rmonkey.util.ToastUtils;
 
 import static android.content.Context.MODE_PRIVATE;
@@ -102,7 +102,7 @@ public class DashboardFragment extends Fragment {
 
             String newPass =  pass.getText().toString();
 
-            new Thread(new GroupRunnable(getToken(), getSettingString("host", "192.168.101.103:9709"), newPass)).start();
+            new Thread(new PassRunnable(getToken(), newPass)).start();
 
             editor.putString("pass", pass.getText().toString());
             editor.apply();

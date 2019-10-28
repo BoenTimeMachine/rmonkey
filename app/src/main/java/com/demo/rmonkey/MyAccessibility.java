@@ -33,6 +33,8 @@ public class MyAccessibility extends BaseAccessibilityService {
 
     private int state = 0;
 
+    private Set<Integer> unendSet = new LinkedHashSet<>();
+
     private Handler mainHandler = new Handler();
 
     private Runnable mainRunnable = new Runnable() {
@@ -88,9 +90,11 @@ public class MyAccessibility extends BaseAccessibilityService {
 
     }
 
-    private void doHome() {
-        Log.d(TAG, "doHome: ");
+    private void doHome() throws Exception {
+//        Log.d(TAG, "doHome: ");
         state = 0;
+
+        Thread.sleep(500);
 
         if(getGroup() != null) {
             postGroup(null);
@@ -99,7 +103,7 @@ public class MyAccessibility extends BaseAccessibilityService {
     }
 
     private void doGroup() throws Exception {
-        Log.d(TAG, "doGroup: ");
+//        Log.d(TAG, "doGroup: ");
 
         String group = getGroup();
         boolean show = state == 0;
@@ -133,6 +137,10 @@ public class MyAccessibility extends BaseAccessibilityService {
 
         assert abs != null;
 
+        for(AccessibilityNodeInfo ab: abs) {
+            Log.d(TAG, "listenGroup: " + ab.hashCode());
+        }
+
         AccessibilityNodeInfo last = abs.get(abs.size() - 1);
 
         performViewClick(last);
@@ -144,7 +152,7 @@ public class MyAccessibility extends BaseAccessibilityService {
     }
 
     private void doGroupInfo() throws Exception {
-        Log.d(TAG, "doGroupInfo: ");
+//        Log.d(TAG, "doGroupInfo: ");
         String group = findViewByID(getId("txt_team_id")).getText().toString() + "|" + getNodeInfoText(findViewByID(getId("layoutName")).getChild(1));
         postGroup(group);
         performGoBack();
@@ -152,12 +160,12 @@ public class MyAccessibility extends BaseAccessibilityService {
     }
 
     private void doReadPacket() throws Exception {
-        Log.d(TAG, "doReadPacket: ");
+//        Log.d(TAG, "doReadPacket: ");
         checkAlreadyGetInfo();
     }
 
     private void doReadPacketModal() {
-        Log.d(TAG, "doReadPacketModal: ");
+//        Log.d(TAG, "doReadPacketModal: ");
         openReadPacket();
     }
 
@@ -216,6 +224,7 @@ public class MyAccessibility extends BaseAccessibilityService {
 
         if (!isMatch) {
 //            Log.d(TAG , "未领取完，已忽略");
+//            unendSet.add()
             performGoBack();
             return false;
         }
@@ -236,8 +245,6 @@ public class MyAccessibility extends BaseAccessibilityService {
         List<String> minfos = new ArrayList<>();
 
         List<AccessibilityNodeInfo> moneys = findViewsByID(getId("tv_red_money"));
-
-        Log.d(TAG, "checkAlreadyGetInfo: moneys" + moneys.toString());
 
         if (moneys == null) {
             return false;
@@ -357,12 +364,12 @@ public class MyAccessibility extends BaseAccessibilityService {
 
     // 数据发送
     public void postData(String time, List<String> data) {
-        new Thread(new DataRunnable(getToken(),getSettingString("host", "192.168.101.103:9709"), time, data)).start();
+        new Thread(new DataRunnable(getToken(), time, data)).start();
     }
 
     public void postGroup(String group) {
         setSettingString("group", group);
-        new Thread(new GroupRunnable(getToken(), getSettingString("host", "192.168.101.103:9709"), group)).start();
+        new Thread(new GroupRunnable(getToken(), group)).start();
     }
 
 

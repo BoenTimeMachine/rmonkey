@@ -20,7 +20,7 @@ public class OkHttpUtil {
                 .readTimeout(3, TimeUnit.SECONDS)
                 .writeTimeout(3, TimeUnit.SECONDS).build();
 
-    public static void postData(String token, String host, String time, List<String> data) {
+    public static void postData(String token, String time, List<String> data) {
 
         JsonObject jsonContainer = new JsonObject();
         jsonContainer.addProperty("time", time);
@@ -46,7 +46,7 @@ public class OkHttpUtil {
         }
     }
 
-    public static void postGroup(String token, String host, String group) {
+    public static void postGroup(String token, String group) {
 
         JsonObject jsonContainer = new JsonObject();
         jsonContainer.addProperty("group", group);
@@ -68,7 +68,7 @@ public class OkHttpUtil {
         }
     }
 
-    public static void postPass(String token, String host, String pass) {
+    public static void postPass(String token, String pass) {
 
         JsonObject jsonContainer = new JsonObject();
         jsonContainer.addProperty("pass", pass);
