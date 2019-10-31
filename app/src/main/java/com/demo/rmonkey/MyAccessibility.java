@@ -42,7 +42,9 @@ public class MyAccessibility extends BaseAccessibilityService {
         @Override
         public void run() {
             try {
-                assert getSettingBoolean("close") && getRootInWindow() != null;
+                if(getSettingBoolean("close") || getRootInWindow() == null) {
+                    throw  new Exception();
+                }
 
                 // 检查账号
                 checkAccount();

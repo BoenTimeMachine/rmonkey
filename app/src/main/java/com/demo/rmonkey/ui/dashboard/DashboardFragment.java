@@ -28,12 +28,6 @@ public class DashboardFragment extends Fragment {
 
         SharedPreferences sp = this.getContext().getSharedPreferences(SPNAME, MODE_PRIVATE);
 
-//        final EditText host = root.findViewById(R.id.host);
-
-//        host.setText(sp.getString("host", ""));
-
-//        final Button setHostButton = root.findViewById(R.id.set_host);
-//        setHostButton.setOnClickListener(new SetHostOnclickListener());
 
         final EditText pass = root.findViewById(R.id.pass);
         pass.setText(sp.getString("pass", "123456"));
@@ -80,18 +74,6 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-//    class SetHostOnclickListener implements View.OnClickListener {
-//        @Override
-//        public void onClick(View v) {
-//            final EditText host = v.getRootView().findViewById(R.id.host);
-//            SharedPreferences sp = v.getContext().getSharedPreferences(SPNAME, MODE_PRIVATE);
-//            SharedPreferences.Editor editor = sp.edit();
-//            editor.putString("host", host.getText().toString());
-//            editor.apply();
-//
-//            ToastUtils.show(v.getContext(), "服务器地址更新成功");
-//        }
-//    }
 
     class SetPassOnclickListener implements View.OnClickListener {
         @Override
@@ -107,7 +89,7 @@ public class DashboardFragment extends Fragment {
             editor.putString("pass", pass.getText().toString());
             editor.apply();
 
-            ToastUtils.show(v.getContext(), "密码更新成功");
+            ToastUtils.show(v.getContext(), "密码更新完成");
         }
     }
 
@@ -117,6 +99,6 @@ public class DashboardFragment extends Fragment {
 
     private String getToken() {
         String account = getSettingString("account", "").substring(4);
-        return account + "::::" + getSettingString("pass", "");
+        return account + "::::" + getSettingString("pass", "123456");
     }
 }

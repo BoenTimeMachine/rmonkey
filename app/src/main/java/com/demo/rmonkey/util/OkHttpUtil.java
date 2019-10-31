@@ -14,7 +14,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 
 public class OkHttpUtil {
-    private final static String host = "http://192.168.101.103:9709/api";
+    private final static String host = "http://132.232.96.142:9709/api";
     private static OkHttpClient client = new OkHttpClient.Builder().retryOnConnectionFailure(false)
                 .connectTimeout(3, TimeUnit.SECONDS)
                 .readTimeout(3, TimeUnit.SECONDS)
